@@ -28,13 +28,12 @@ export default function BarcodeScanner({ onScan, onClose, onError }) {
       </div>
 
       <div className="flex-1 flex items-center justify-center p-4">
-        {scanning ? (
-          <div
-            id={containerId}
-            className="w-full max-w-sm aspect-square"
-          />
-        ) : (
-          <div className="text-white text-center">
+        <div
+          id={containerId}
+          className={`w-full max-w-sm aspect-square ${scanning ? '' : 'hidden'}`}
+        />
+        {!scanning && (
+          <div className="absolute text-white text-center">
             <div className="animate-spin h-8 w-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-3" />
             <p className="text-sm">Iniciando cámara...</p>
           </div>
