@@ -21,6 +21,8 @@ export function parseExcel(file) {
         const hasDesc = header.includes(EXCEL_COLUMNS.DESCRIPCION)
         const hasCat = header.includes(EXCEL_COLUMNS.CATEGORIA)
         const hasStock = header.includes(EXCEL_COLUMNS.STOCK)
+        const hasPasillo = header.includes(EXCEL_COLUMNS.PASILLO)
+        const hasPosicion = header.includes(EXCEL_COLUMNS.POSICION)
 
         if (!hasSku || !hasDesc) {
           reject(
@@ -31,29 +33,60 @@ export function parseExcel(file) {
           return
         }
 
-        const productos = rows.map((row, i) => {
+        const getVal = (row, key) => {
           const keys = Object.keys(row)
-          const getVal = (key) => {
-            const match = keys.find(
-              (k) => k.toLowerCase().trim() === key
-            )
-            return match ? String(row[match]).trim() : ''
-          }
-          const stockVal = hasStock ? getVal(EXCEL_COLUMNS.STOCK) : ''
+          const match = keys.find((k) => k.toLowerCase().trim() === key)
+          return match ? String(row[match]).trim() : ''
+        }
+
+        const parsedRows = rows.map((row) => {
+          const stockVal = hasStock ? getVal(row, EXCEL_COLUMNS.STOCK) : ''
           return {
-            id: getVal(EXCEL_COLUMNS.SKU),
-            nombre: getVal(EXCEL_COLUMNS.DESCRIPCION),
-            familia: hasCat ? getVal(EXCEL_COLUMNS.CATEGORIA) : 'General',
+            id: getVal(row, EXCEL_COLUMNS.SKU),
+            nombre: getVal(row, EXCEL_COLUMNS.DESCRIPCION),
+            familia: hasCat ? getVal(row, EXCEL_COLUMNS.CATEGORIA) : 'General',
             stock: stockVal ? parseFloat(stockVal) || 0 : null,
+            pasillo: hasPasillo ? getVal(row, EXCEL_COLUMNS.PASILLO) : '',
+            posicion: hasPosicion ? getVal(row, EXCEL_COLUMNS.POSICION) : '',
           }
         }).filter((p) => p.id && p.nombre)
 
-        if (!productos.length) {
+        if (!parsedRows.length) {
           reject(new Error('No se encontraron productos válidos en el Excel'))
           return
         }
 
-        resolve(productos)
+        const seen = {}
+        const ubicaciones = {}
+        const productos = []
+
+        parsedRows.forEach((row) => {
+          if (row.pasillo || row.posicion) {
+            if (!ubicaciones[row.id]) ubicaciones[row.id] = []
+            ubicaciones[row.id].push({
+              pasillo: row.pasillo,
+              posicion: row.posicion,
+              stock: row.stock,
+            })
+          }
+
+          if (!seen[row.id]) {
+            seen[row.id] = true
+            productos.push({
+              id: row.id,
+              nombre: row.nombre,
+              familia: row.familia,
+              stock: row.stock,
+            })
+          } else {
+            const existing = productos.find((p) => p.id === row.id)
+            if (existing && existing.stock !== null && row.stock !== null) {
+              existing.stock += row.stock
+            }
+          }
+        })
+
+        resolve({ productos, ubicaciones })
       } catch (err) {
         reject(new Error('Error al leer el archivo: ' + err.message))
       }

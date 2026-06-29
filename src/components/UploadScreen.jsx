@@ -17,8 +17,8 @@ export default function UploadScreen({ onProductsLoaded }) {
     setLoading(true)
     setError(null)
     try {
-      const productos = await parseExcel(file)
-      onProductsLoaded(productos)
+      const result = await parseExcel(file)
+      onProductsLoaded(result)
     } catch (err) {
       setError(err.message)
     } finally {

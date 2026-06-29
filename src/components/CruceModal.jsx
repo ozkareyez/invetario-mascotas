@@ -1,6 +1,12 @@
 import { useMemo, useState } from 'react'
 
-export default function CruceModal({ productos, conteo, onClose }) {
+export default function CruceModal({
+  productos,
+  conteo,
+  conteoPosiciones,
+  ubicaciones,
+  onClose,
+}) {
   const [filter, setFilter] = useState('todas')
   const [sortBy, setSortBy] = useState('nombre')
   const [sortDir, setSortDir] = useState('asc')

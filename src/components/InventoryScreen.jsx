@@ -4,6 +4,7 @@ import SearchInput from './SearchInput'
 import ProductForm from './ProductForm'
 import { exportInventory } from '../utils/exportExcel'
 import CruceModal from './CruceModal'
+import UbicacionesModal from './UbicacionesModal'
 import { STORAGE_KEYS } from '../constants'
 
 const FAMILIA_KEY = 'inventario_familia_filter'
@@ -11,6 +12,8 @@ const FAMILIA_KEY = 'inventario_familia_filter'
 export default function InventoryScreen({
   productos,
   conteo,
+  conteoPosiciones,
+  ubicaciones,
   onUpdateConteo,
   onReset,
 }) {
@@ -24,6 +27,7 @@ export default function InventoryScreen({
   const [selectedProducto, setSelectedProducto] = useState(null)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [showCruce, setShowCruce] = useState(false)
+  const [showUbicaciones, setShowUbicaciones] = useState(false)
 
   const stats = useMemo(() => {
     const total = productos.length
@@ -85,8 +89,8 @@ export default function InventoryScreen({
   }, [])
 
   const handleSave = useCallback(
-    (id, cantidad) => {
-      onUpdateConteo(id, cantidad)
+    (id, cantidad, posKey, cantidadPosicion) => {
+      onUpdateConteo(id, cantidad, posKey, cantidadPosicion)
     },
     [onUpdateConteo]
   )
@@ -125,7 +129,13 @@ export default function InventoryScreen({
               Ver Cruce
             </button>
             <button
-              onClick={() => exportInventory(productos, conteo)}
+              onClick={() => setShowUbicaciones(true)}
+              className="text-sm bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-medium touch-manipulation"
+            >
+              Ubicaciones
+            </button>
+            <button
+              onClick={() => exportInventory(productos, conteo, ubicaciones, conteoPosiciones)}
               className="text-sm text-gray-600 hover:text-blue-800 font-medium touch-manipulation"
             >
               Descargar
@@ -216,6 +226,7 @@ export default function InventoryScreen({
         <ProductForm
           producto={selectedProducto}
           conteoActual={conteo}
+          conteoPosiciones={conteoPosiciones}
           onSave={handleSave}
           onDeselect={handleDeselect}
         />
@@ -225,7 +236,18 @@ export default function InventoryScreen({
         <CruceModal
           productos={productos}
           conteo={conteo}
+          conteoPosiciones={conteoPosiciones}
+          ubicaciones={ubicaciones}
           onClose={() => setShowCruce(false)}
+        />
+      )}
+
+      {showUbicaciones && (
+        <UbicacionesModal
+          productos={productos}
+          ubicaciones={ubicaciones}
+          conteoPosiciones={conteoPosiciones}
+          onClose={() => setShowUbicaciones(false)}
         />
       )}
 

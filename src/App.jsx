@@ -14,6 +14,14 @@ export default function App() {
     null
   )
   const [conteo, setConteo] = useLocalStorage(STORAGE_KEYS.CONTEO, {})
+  const [conteoPosiciones, setConteoPosiciones] = useLocalStorage(
+    STORAGE_KEYS.CONTEO_POSICIONES,
+    {}
+  )
+  const [ubicaciones, setUbicaciones, removeUbicaciones] = useLocalStorage(
+    STORAGE_KEYS.UBICACIONES,
+    {}
+  )
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
@@ -21,25 +29,37 @@ export default function App() {
   }, [])
 
   const handleProductsLoaded = useCallback(
-    (data) => {
-      setProductos(data)
+    (result) => {
+      setProductos(result.productos)
+      setUbicaciones(result.ubicaciones || {})
       setInStorage(STORAGE_KEYS.TIMESTAMP, new Date().toISOString())
     },
-    [setProductos]
+    [setProductos, setUbicaciones]
   )
 
   const handleUpdateConteo = useCallback(
-    (id, cantidad) => {
+    (id, cantidad, posKey, cantidadPosicion) => {
       setConteo((prev) => ({ ...prev, [id]: cantidad }))
+      if (posKey !== undefined && cantidadPosicion !== undefined) {
+        setConteoPosiciones((prev) => ({
+          ...prev,
+          [id]: {
+            ...prev[id],
+            [posKey]: cantidadPosicion,
+          },
+        }))
+      }
     },
-    [setConteo]
+    [setConteo, setConteoPosiciones]
   )
 
   const handleReset = useCallback(() => {
     removeProductos()
+    removeUbicaciones()
     removeFromStorage(STORAGE_KEYS.CONTEO)
+    removeFromStorage(STORAGE_KEYS.CONTEO_POSICIONES)
     removeFromStorage(STORAGE_KEYS.TIMESTAMP)
-  }, [removeProductos])
+  }, [removeProductos, removeUbicaciones])
 
   if (!ready) return null
 
@@ -51,6 +71,8 @@ export default function App() {
     <InventoryScreen
       productos={productos}
       conteo={conteo}
+      conteoPosiciones={conteoPosiciones}
+      ubicaciones={ubicaciones}
       onUpdateConteo={handleUpdateConteo}
       onReset={handleReset}
     />
