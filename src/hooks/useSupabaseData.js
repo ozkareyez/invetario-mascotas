@@ -5,7 +5,11 @@ export function useSupabaseData(roomCode) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const pendingRef = useRef(false)
+  const dataRef = useRef(data)
+
+  useEffect(() => {
+    dataRef.current = data
+  }, [data])
 
   useEffect(() => {
     if (!roomCode) {
@@ -61,9 +65,12 @@ export function useSupabaseData(roomCode) {
 
   const updateConteo = useCallback(
     async (id, cantidad, posKey, cantidadPosicion) => {
-      if (!roomCode || !data) return
-      const newConteo = { ...data.conteo, [id]: cantidad }
-      const newConteoPos = { ...data.conteo_posiciones }
+      if (!roomCode) return
+      const current = dataRef.current
+      if (!current) return
+
+      const newConteo = { ...current.conteo, [id]: cantidad }
+      const newConteoPos = { ...current.conteo_posiciones }
 
       if (posKey !== undefined && cantidadPosicion !== undefined) {
         newConteoPos[id] = { ...(newConteoPos[id] || {}), [posKey]: cantidadPosicion }
@@ -79,9 +86,15 @@ export function useSupabaseData(roomCode) {
         .update(updates)
         .eq('id', roomCode)
 
-      if (updateError) setError(updateError.message)
+      if (updateError) {
+        setError(updateError.message)
+      } else {
+        const optimisticData = { ...current, ...updates }
+        dataRef.current = optimisticData
+        setData(optimisticData)
+      }
     },
-    [roomCode, data]
+    [roomCode]
   )
 
   const resetConteo = useCallback(async () => {
@@ -90,8 +103,16 @@ export function useSupabaseData(roomCode) {
       .from('inventarios')
       .update({ conteo: {}, conteo_posiciones: {} })
       .eq('id', roomCode)
-    if (resetError) setError(resetError.message)
+    if (resetError) {
+      setError(resetError.message)
+    } else {
+      setData((prev) =>
+        prev ? { ...prev, conteo: {}, conteo_posiciones: {} } : prev
+      )
+    }
   }, [roomCode])
+
+  const clearError = useCallback(() => setError(null), [])
 
   return {
     productos: data?.productos || [],
@@ -100,6 +121,7 @@ export function useSupabaseData(roomCode) {
     ubicaciones: data?.ubicaciones || {},
     updateConteo,
     resetConteo,
+    clearError,
     loading,
     error,
   }

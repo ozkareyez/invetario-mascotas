@@ -33,9 +33,16 @@ export default function App() {
     setReady(true)
   }, [])
 
-  // --- Firebase mode ---
+  // --- Supabase mode ---
   const { roomCode, createRoom, joinRoom, leaveRoom, loading: roomLoading, error: roomError } = useRoom()
   const fb = useSupabaseData(roomCode)
+
+  useEffect(() => {
+    if (fb.error) {
+      const t = setTimeout(fb.clearError, 6000)
+      return () => clearTimeout(t)
+    }
+  }, [fb.error, fb.clearError])
 
   // --- localStorage mode (fallback) ---
   const [localProductos, setLocalProductos, removeLocalProductos] = useLocalStorage(
@@ -89,7 +96,7 @@ export default function App() {
 
   if (!ready) return null
 
-  // ===================== Firebase mode =====================
+  // ===================== Supabase mode =====================
   if (hasConfig) {
     if (!roomCode) {
       return (
@@ -105,16 +112,23 @@ export default function App() {
     if (fb.loading) return <Loading />
 
     return (
-      <InventoryScreen
-        productos={fb.productos}
-        conteo={fb.conteo}
-        conteoPosiciones={fb.conteoPosiciones}
-        ubicaciones={fb.ubicaciones}
-        onUpdateConteo={fb.updateConteo}
-        onReset={fb.resetConteo}
-        roomCode={roomCode}
-        onLeaveRoom={leaveRoom}
-      />
+      <>
+        {fb.error && (
+          <div className="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white text-center py-2 px-4 text-sm font-medium">
+            {fb.error}
+          </div>
+        )}
+        <InventoryScreen
+          productos={fb.productos}
+          conteo={fb.conteo}
+          conteoPosiciones={fb.conteoPosiciones}
+          ubicaciones={fb.ubicaciones}
+          onUpdateConteo={fb.updateConteo}
+          onReset={fb.resetConteo}
+          roomCode={roomCode}
+          onLeaveRoom={leaveRoom}
+        />
+      </>
     )
   }
 
