@@ -317,9 +317,11 @@ export default function InventoryScreen({
       {showResetConfirm && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-6">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
-            <h3 className="text-lg font-semibold mb-2">¿Subir nuevo Excel?</h3>
+            <h3 className="text-lg font-semibold mb-2">Nuevo inventario</h3>
             <p className="text-gray-600 text-sm mb-4">
-              Esto borrará todos los productos y el conteo actual. ¿Estás seguro?
+              {roomCode
+                ? 'Sal de la sala para subir un nuevo Excel y empezar otro inventario.'
+                : 'Esto borrará todos los productos y el conteo actual. ¿Estás seguro?'}
             </p>
             <div className="flex gap-3">
               <button
@@ -332,7 +334,7 @@ export default function InventoryScreen({
                 onClick={handleReset}
                 className="flex-1 py-2.5 bg-red-600 rounded-lg text-white font-medium touch-manipulation"
               >
-                Borrar todo
+                {roomCode ? 'Salir y empezar nuevo' : 'Borrar todo'}
               </button>
             </div>
           </div>
