@@ -64,8 +64,20 @@ export function useSupabaseData(roomCode) {
         }
       })
 
+    const interval = setInterval(() => {
+      supabase
+        .from('inventarios')
+        .select('*')
+        .eq('id', roomCode)
+        .single()
+        .then(({ data: row, error: fetchError }) => {
+          if (!fetchError && row) setData(row)
+        })
+    }, 10000)
+
     return () => {
       supabase.removeChannel(channel)
+      clearInterval(interval)
     }
   }, [roomCode])
 

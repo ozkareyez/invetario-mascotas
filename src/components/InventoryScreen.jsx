@@ -16,6 +16,7 @@ export default function InventoryScreen({
   ubicaciones,
   onUpdateConteo,
   onReset,
+  onRefetch,
   roomCode,
   onLeaveRoom,
 }) {
@@ -137,6 +138,14 @@ export default function InventoryScreen({
             >
               Ubicaciones
             </button>
+            {onRefetch && (
+              <button
+                onClick={onRefetch}
+                className="text-sm bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg font-medium touch-manipulation hover:bg-gray-200"
+              >
+                Sync
+              </button>
+            )}
             {roomCode && (
               <button
                 onClick={() => setShowShare(true)}

@@ -128,6 +128,7 @@ export default function App() {
           ubicaciones={fb.ubicaciones}
           onUpdateConteo={fb.updateConteo}
           onReset={deleteRoom}
+          onRefetch={fb.refetch}
           roomCode={roomCode}
           onLeaveRoom={leaveRoom}
         />
