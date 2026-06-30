@@ -2,31 +2,33 @@
 -- Supabase Schema para Inventario Multi-dispositivo
 -- =============================================================
 
+DROP FUNCTION IF EXISTS update_actualizado_en();
+
 CREATE TABLE IF NOT EXISTS inventarios (
   id                TEXT PRIMARY KEY,
   productos         JSONB NOT NULL DEFAULT '[]',
   conteo            JSONB NOT NULL DEFAULT '{}',
   conteo_posiciones JSONB NOT NULL DEFAULT '{}',
   ubicaciones       JSONB NOT NULL DEFAULT '{}',
-  creado_en         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  actualizado_en    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_inventarios_id ON inventarios (id);
 
-CREATE OR REPLACE FUNCTION update_actualizado_en()
+CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
-  NEW.actualizado_en = NOW();
+  NEW.updated_at = NOW();
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_inventarios_actualizado ON inventarios;
-CREATE TRIGGER trg_inventarios_actualizado
+DROP TRIGGER IF EXISTS trg_inventarios_updated_at ON inventarios;
+CREATE TRIGGER trg_inventarios_updated_at
   BEFORE UPDATE ON inventarios
   FOR EACH ROW
-  EXECUTE FUNCTION update_actualizado_en();
+  EXECUTE FUNCTION update_updated_at();
 
 ALTER TABLE inventarios ENABLE ROW LEVEL SECURITY;
 
