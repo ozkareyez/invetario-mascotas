@@ -78,6 +78,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+GRANT EXECUTE ON FUNCTION update_conteo_posicion TO anon;
+
 ALTER TABLE inventarios ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Permitir lectura pública" ON inventarios;

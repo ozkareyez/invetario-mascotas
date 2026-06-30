@@ -56,7 +56,11 @@ export function useSupabaseData(roomCode) {
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setError('Error de conexión en tiempo real. Los cambios no se sincronizarán.')
+        }
+      })
 
     return () => {
       supabase.removeChannel(channel)
@@ -70,6 +74,16 @@ export function useSupabaseData(roomCode) {
       if (!current) return
 
       if (posKey !== undefined && cantidadPosicion !== undefined) {
+        const newConteoPos = { ...current.conteo_posiciones }
+        if (!newConteoPos[id]) newConteoPos[id] = {}
+        newConteoPos[id][posKey] = cantidadPosicion
+        const valores = Object.values(newConteoPos[id])
+        const nuevoTotal = valores.reduce((s, v) => s + v, 0)
+        const updates = {
+          conteo: { ...current.conteo, [id]: nuevoTotal },
+          conteo_posiciones: newConteoPos,
+        }
+
         const { error: rpcError } = await supabase
           .rpc('update_conteo_posicion', {
             p_room_id: roomCode,
@@ -79,24 +93,22 @@ export function useSupabaseData(roomCode) {
           })
 
         if (rpcError) {
-          setError(rpcError.message)
-        } else {
-          const newConteoPos = { ...current.conteo_posiciones }
-          if (!newConteoPos[id]) newConteoPos[id] = {}
-          newConteoPos[id][posKey] = cantidadPosicion
-          const valores = Object.values(newConteoPos[id])
-          const nuevoTotal = valores.reduce((s, v) => s + v, 0)
-          const optimisticData = {
-            ...current,
-            conteo: { ...current.conteo, [id]: nuevoTotal },
-            conteo_posiciones: newConteoPos,
+          const { error: updateError } = await supabase
+            .from('inventarios')
+            .update(updates)
+            .eq('id', roomCode)
+
+          if (updateError) {
+            setError(updateError.message)
+            return
           }
-          dataRef.current = optimisticData
-          setData(optimisticData)
         }
+
+        const optimisticData = { ...current, ...updates }
+        dataRef.current = optimisticData
+        setData(optimisticData)
       } else {
-        const newConteo = { ...current.conteo, [id]: cantidad }
-        const updates = { conteo: newConteo }
+        const updates = { conteo: { ...current.conteo, [id]: cantidad } }
 
         const { error: updateError } = await supabase
           .from('inventarios')
