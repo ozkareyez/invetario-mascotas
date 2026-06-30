@@ -69,29 +69,47 @@ export function useSupabaseData(roomCode) {
       const current = dataRef.current
       if (!current) return
 
-      const newConteo = { ...current.conteo, [id]: cantidad }
-      const newConteoPos = { ...current.conteo_posiciones }
-
       if (posKey !== undefined && cantidadPosicion !== undefined) {
-        newConteoPos[id] = { ...(newConteoPos[id] || {}), [posKey]: cantidadPosicion }
-      }
+        const { error: rpcError } = await supabase
+          .rpc('update_conteo_posicion', {
+            p_room_id: roomCode,
+            p_sku: id,
+            p_pos_key: posKey,
+            p_cantidad: cantidadPosicion,
+          })
 
-      const updates = { conteo: newConteo }
-      if (posKey !== undefined) {
-        updates.conteo_posiciones = newConteoPos
-      }
-
-      const { error: updateError } = await supabase
-        .from('inventarios')
-        .update(updates)
-        .eq('id', roomCode)
-
-      if (updateError) {
-        setError(updateError.message)
+        if (rpcError) {
+          setError(rpcError.message)
+        } else {
+          const newConteoPos = { ...current.conteo_posiciones }
+          if (!newConteoPos[id]) newConteoPos[id] = {}
+          newConteoPos[id][posKey] = cantidadPosicion
+          const valores = Object.values(newConteoPos[id])
+          const nuevoTotal = valores.reduce((s, v) => s + v, 0)
+          const optimisticData = {
+            ...current,
+            conteo: { ...current.conteo, [id]: nuevoTotal },
+            conteo_posiciones: newConteoPos,
+          }
+          dataRef.current = optimisticData
+          setData(optimisticData)
+        }
       } else {
-        const optimisticData = { ...current, ...updates }
-        dataRef.current = optimisticData
-        setData(optimisticData)
+        const newConteo = { ...current.conteo, [id]: cantidad }
+        const updates = { conteo: newConteo }
+
+        const { error: updateError } = await supabase
+          .from('inventarios')
+          .update(updates)
+          .eq('id', roomCode)
+
+        if (updateError) {
+          setError(updateError.message)
+        } else {
+          const optimisticData = { ...current, ...updates }
+          dataRef.current = optimisticData
+          setData(optimisticData)
+        }
       }
     },
     [roomCode]
