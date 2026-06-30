@@ -54,6 +54,20 @@ export function exportInventory(productos, conteo, ubicaciones = {}, conteoPosic
   ]
   ws['!cols'] = colWidths
 
+  for (let i = 0; i < data.length; i++) {
+    const diff = data[i].Diferencia
+    if (typeof diff !== 'number') continue
+    const addr = XLSX.utils.encode_cell({ r: i + 1, c: 5 })
+    const cell = ws[addr]
+    if (!cell) continue
+    cell.s = {
+      font: {
+        color: { rgb: diff > 0 ? 'FF0000' : diff < 0 ? '008000' : '000000' },
+        bold: diff !== 0,
+      },
+    }
+  }
+
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Inventario')
   XLSX.writeFile(wb, `inventario_${new Date().toISOString().slice(0, 10)}.xlsx`)

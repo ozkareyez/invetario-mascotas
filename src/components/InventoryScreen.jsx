@@ -16,6 +16,8 @@ export default function InventoryScreen({
   ubicaciones,
   onUpdateConteo,
   onReset,
+  roomCode,
+  onLeaveRoom,
 }) {
   const [selectedFamily, setSelectedFamily] = useState(() => {
     try {
@@ -28,6 +30,7 @@ export default function InventoryScreen({
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [showCruce, setShowCruce] = useState(false)
   const [showUbicaciones, setShowUbicaciones] = useState(false)
+  const [showShare, setShowShare] = useState(false)
 
   const stats = useMemo(() => {
     const total = productos.length
@@ -134,6 +137,14 @@ export default function InventoryScreen({
             >
               Ubicaciones
             </button>
+            {roomCode && (
+              <button
+                onClick={() => setShowShare(true)}
+                className="text-sm bg-purple-600 text-white px-3 py-1.5 rounded-lg font-medium touch-manipulation"
+              >
+                Compartir
+              </button>
+            )}
             <button
               onClick={() => exportInventory(productos, conteo, ubicaciones, conteoPosiciones)}
               className="text-sm text-gray-600 hover:text-blue-800 font-medium touch-manipulation"
@@ -249,6 +260,58 @@ export default function InventoryScreen({
           conteoPosiciones={conteoPosiciones}
           onClose={() => setShowUbicaciones(false)}
         />
+      )}
+
+      {showShare && roomCode && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <h3 className="text-lg font-semibold mb-2">Compartir Sala</h3>
+            <p className="text-gray-600 text-sm mb-4">
+              Comparte este código con otros dispositivos para que se unan al mismo inventario:
+            </p>
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <span className="text-3xl font-mono font-bold tracking-[0.3em] text-purple-700 bg-purple-50 px-4 py-3 rounded-xl">
+                {roomCode}
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 text-center mb-4">
+              O comparte este enlace:{' '}
+              <span className="text-blue-600 select-all">
+                {window.location.origin}/?room={roomCode}
+              </span>
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  navigator.clipboard?.writeText(
+                    `${window.location.origin}/?room=${roomCode}`
+                  )
+                  setShowShare(false)
+                }}
+                className="flex-1 py-2.5 bg-blue-600 rounded-lg text-white font-medium touch-manipulation"
+              >
+                Copiar enlace
+              </button>
+              <button
+                onClick={() => setShowShare(false)}
+                className="flex-1 py-2.5 bg-gray-100 rounded-lg text-gray-700 font-medium touch-manipulation"
+              >
+                Cerrar
+              </button>
+            </div>
+            {onLeaveRoom && (
+              <button
+                onClick={() => {
+                  setShowShare(false)
+                  onLeaveRoom()
+                }}
+                className="w-full mt-3 py-2 text-sm text-gray-400 hover:text-red-600 underline touch-manipulation"
+              >
+                Salir de la sala
+              </button>
+            )}
+          </div>
+        </div>
       )}
 
       {showResetConfirm && (
