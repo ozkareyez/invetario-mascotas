@@ -3,7 +3,10 @@
 -- =============================================================
 
 DROP TRIGGER IF EXISTS trg_inventarios_actualizado ON inventarios;
+DROP TRIGGER IF EXISTS trg_inventarios_updated_at ON inventarios;
 DROP FUNCTION IF EXISTS update_actualizado_en();
+DROP FUNCTION IF EXISTS update_updated_at();
+DROP FUNCTION IF EXISTS update_conteo_posicion(TEXT, TEXT, TEXT, INTEGER);
 
 CREATE TABLE IF NOT EXISTS inventarios (
   id                TEXT PRIMARY KEY,
@@ -16,69 +19,6 @@ CREATE TABLE IF NOT EXISTS inventarios (
 );
 
 CREATE INDEX IF NOT EXISTS idx_inventarios_id ON inventarios (id);
-
-CREATE OR REPLACE FUNCTION update_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trg_inventarios_updated_at ON inventarios;
-CREATE TRIGGER trg_inventarios_updated_at
-  BEFORE UPDATE ON inventarios
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at();
-
--- =============================================================
--- RPC: Actualizar conteo de una posición (merge atómico)
--- =============================================================
-DROP FUNCTION IF EXISTS update_conteo_posicion(TEXT, TEXT, TEXT, INTEGER);
-
-CREATE OR REPLACE FUNCTION update_conteo_posicion(
-  p_room_id TEXT,
-  p_sku TEXT,
-  p_pos_key TEXT,
-  p_cantidad INTEGER
-) RETURNS void AS $$
-DECLARE
-  conteo_pos_actual JSONB;
-  nuevas_conteo_pos JSONB;
-  nuevo_total INTEGER;
-BEGIN
-  SELECT conteo_posiciones INTO conteo_pos_actual
-  FROM inventarios WHERE id = p_room_id FOR UPDATE;
-
-  IF conteo_pos_actual IS NULL THEN
-    conteo_pos_actual := '{}'::jsonb;
-  END IF;
-
-  nuevas_conteo_pos := jsonb_set(
-    conteo_pos_actual,
-    ARRAY[p_sku, p_pos_key],
-    to_jsonb(p_cantidad),
-    true
-  );
-
-  SELECT COALESCE(SUM((value)::int), 0)
-  INTO nuevo_total
-  FROM jsonb_each(nuevas_conteo_pos -> p_sku);
-
-  UPDATE inventarios
-  SET
-    conteo = jsonb_set(
-      COALESCE(conteo, '{}'::jsonb),
-      ARRAY[p_sku],
-      to_jsonb(nuevo_total),
-      true
-    ),
-    conteo_posiciones = nuevas_conteo_pos
-  WHERE id = p_room_id;
-END;
-$$ LANGUAGE plpgsql;
-
-GRANT EXECUTE ON FUNCTION update_conteo_posicion TO anon;
 
 ALTER TABLE inventarios ENABLE ROW LEVEL SECURITY;
 

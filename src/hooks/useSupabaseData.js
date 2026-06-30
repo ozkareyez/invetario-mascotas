@@ -87,25 +87,15 @@ export function useSupabaseData(roomCode) {
             conteo_posiciones: newConteoPos,
           }
 
-          const { error: rpcError } = await supabase
-            .rpc('update_conteo_posicion', {
-              p_room_id: roomCode,
-              p_sku: id,
-              p_pos_key: posKey,
-              p_cantidad: cantidadPosicion,
-            })
+          const { error: updateError } = await supabase
+            .from('inventarios')
+            .update(updates)
+            .eq('id', roomCode)
 
-          if (rpcError) {
-            const { error: updateError } = await supabase
-              .from('inventarios')
-              .update(updates)
-              .eq('id', roomCode)
-
-            if (updateError) {
-              console.error('Error updating conteo:', updateError)
-              setError(updateError.message)
-              return
-            }
+          if (updateError) {
+            console.error('Error actualizando conteo:', updateError)
+            setError(updateError.message)
+            return
           }
 
           const optimisticData = { ...current, ...updates }
