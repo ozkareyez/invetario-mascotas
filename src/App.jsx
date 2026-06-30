@@ -34,7 +34,7 @@ export default function App() {
   }, [])
 
   // --- Supabase mode ---
-  const { roomCode, createRoom, joinRoom, leaveRoom, loading: roomLoading, error: roomError } = useRoom()
+  const { roomCode, createRoom, joinRoom, leaveRoom, deleteRoom, loading: roomLoading, error: roomError } = useRoom()
   const fb = useSupabaseData(roomCode)
 
   useEffect(() => {
@@ -124,7 +124,7 @@ export default function App() {
           conteoPosiciones={fb.conteoPosiciones}
           ubicaciones={fb.ubicaciones}
           onUpdateConteo={fb.updateConteo}
-          onReset={leaveRoom}
+          onReset={deleteRoom}
           roomCode={roomCode}
           onLeaveRoom={leaveRoom}
         />

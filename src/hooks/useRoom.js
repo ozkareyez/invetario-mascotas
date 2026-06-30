@@ -84,6 +84,16 @@ export function useRoom() {
     try { sessionStorage.removeItem(ROOM_KEY) } catch {}
   }, [])
 
+  const deleteRoom = useCallback(async () => {
+    if (!hasConfig || !roomCode) return
+    const { error: delError } = await supabase
+      .from('inventarios')
+      .delete()
+      .eq('id', roomCode)
+    if (delError) setError(delError.message)
+    leaveRoom()
+  }, [roomCode])
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const room = params.get('room')
@@ -92,5 +102,5 @@ export function useRoom() {
     }
   }, [joinRoom])
 
-  return { roomCode, createRoom, joinRoom, leaveRoom, loading, error }
+  return { roomCode, createRoom, joinRoom, leaveRoom, deleteRoom, loading, error }
 }

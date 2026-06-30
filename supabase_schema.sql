@@ -44,3 +44,8 @@ DROP POLICY IF EXISTS "Permitir actualización pública" ON inventarios;
 CREATE POLICY "Permitir actualización pública"
   ON inventarios FOR UPDATE
   USING (true);
+
+DROP POLICY IF EXISTS "Permitir eliminación pública" ON inventarios;
+CREATE POLICY "Permitir eliminación pública"
+  ON inventarios FOR DELETE
+  USING (true);
