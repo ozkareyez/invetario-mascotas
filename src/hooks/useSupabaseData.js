@@ -29,6 +29,7 @@ export function useSupabaseData(roomCode) {
         .single()
 
       if (fetchError) {
+        console.error('Error fetching data:', fetchError)
         setError(fetchError.message)
       } else {
         setData(row)
@@ -58,7 +59,8 @@ export function useSupabaseData(roomCode) {
       )
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setError('Error de conexión en tiempo real. Los cambios no se sincronizarán.')
+          console.error('Realtime subscription error:', status)
+          setError('Error de conexión en tiempo real')
         }
       })
 
@@ -73,55 +75,52 @@ export function useSupabaseData(roomCode) {
       const current = dataRef.current
       if (!current) return
 
-      if (posKey !== undefined && cantidadPosicion !== undefined) {
-        const newConteoPos = { ...current.conteo_posiciones }
-        if (!newConteoPos[id]) newConteoPos[id] = {}
-        newConteoPos[id][posKey] = cantidadPosicion
-        const valores = Object.values(newConteoPos[id])
-        const nuevoTotal = valores.reduce((s, v) => s + v, 0)
-        const updates = {
-          conteo: { ...current.conteo, [id]: nuevoTotal },
-          conteo_posiciones: newConteoPos,
-        }
+      try {
+        if (posKey !== undefined && cantidadPosicion !== undefined) {
+          const newConteoPos = { ...current.conteo_posiciones }
+          if (!newConteoPos[id]) newConteoPos[id] = {}
+          newConteoPos[id][posKey] = cantidadPosicion
+          const valores = Object.values(newConteoPos[id])
+          const nuevoTotal = valores.reduce((s, v) => s + v, 0)
+          const updates = {
+            conteo: { ...current.conteo, [id]: nuevoTotal },
+            conteo_posiciones: newConteoPos,
+          }
 
-        const { error: rpcError } = await supabase
-          .rpc('update_conteo_posicion', {
-            p_room_id: roomCode,
-            p_sku: id,
-            p_pos_key: posKey,
-            p_cantidad: cantidadPosicion,
-          })
-
-        if (rpcError) {
           const { error: updateError } = await supabase
             .from('inventarios')
             .update(updates)
             .eq('id', roomCode)
 
           if (updateError) {
+            console.error('Error updating conteo:', updateError)
             setError(updateError.message)
             return
           }
-        }
 
-        const optimisticData = { ...current, ...updates }
-        dataRef.current = optimisticData
-        setData(optimisticData)
-      } else {
-        const updates = { conteo: { ...current.conteo, [id]: cantidad } }
-
-        const { error: updateError } = await supabase
-          .from('inventarios')
-          .update(updates)
-          .eq('id', roomCode)
-
-        if (updateError) {
-          setError(updateError.message)
-        } else {
           const optimisticData = { ...current, ...updates }
           dataRef.current = optimisticData
           setData(optimisticData)
+        } else {
+          const updates = { conteo: { ...current.conteo, [id]: cantidad } }
+
+          const { error: updateError } = await supabase
+            .from('inventarios')
+            .update(updates)
+            .eq('id', roomCode)
+
+          if (updateError) {
+            console.error('Error updating conteo:', updateError)
+            setError(updateError.message)
+          } else {
+            const optimisticData = { ...current, ...updates }
+            dataRef.current = optimisticData
+            setData(optimisticData)
+          }
         }
+      } catch (err) {
+        console.error('Unexpected error in updateConteo:', err)
+        setError(err.message)
       }
     },
     [roomCode]
@@ -134,6 +133,7 @@ export function useSupabaseData(roomCode) {
       .update({ conteo: {}, conteo_posiciones: {} })
       .eq('id', roomCode)
     if (resetError) {
+      console.error('Error resetting conteo:', resetError)
       setError(resetError.message)
     } else {
       setData((prev) =>
@@ -144,6 +144,21 @@ export function useSupabaseData(roomCode) {
 
   const clearError = useCallback(() => setError(null), [])
 
+  const refetch = useCallback(async () => {
+    if (!roomCode) return
+    const { data: row, error: fetchError } = await supabase
+      .from('inventarios')
+      .select('*')
+      .eq('id', roomCode)
+      .single()
+    if (fetchError) {
+      console.error('Error refetching:', fetchError)
+      setError(fetchError.message)
+    } else {
+      setData(row)
+    }
+  }, [roomCode])
+
   return {
     productos: data?.productos || [],
     conteo: data?.conteo || {},
@@ -152,6 +167,7 @@ export function useSupabaseData(roomCode) {
     updateConteo,
     resetConteo,
     clearError,
+    refetch,
     loading,
     error,
   }

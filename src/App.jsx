@@ -38,11 +38,8 @@ export default function App() {
   const fb = useSupabaseData(roomCode)
 
   useEffect(() => {
-    if (fb.error) {
-      const t = setTimeout(fb.clearError, 6000)
-      return () => clearTimeout(t)
-    }
-  }, [fb.error, fb.clearError])
+    if (fb.error) console.error('Supabase error:', fb.error)
+  }, [fb.error])
 
   // --- localStorage mode (fallback) ---
   const [localProductos, setLocalProductos, removeLocalProductos] = useLocalStorage(
@@ -114,8 +111,14 @@ export default function App() {
     return (
       <>
         {fb.error && (
-          <div className="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white text-center py-2 px-4 text-sm font-medium">
-            {fb.error}
+          <div className="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white px-4 py-2 text-sm flex items-center justify-between gap-2">
+            <span className="flex-1">{fb.error}</span>
+            <button onClick={fb.refetch} className="px-2 py-0.5 bg-red-700 rounded text-xs font-medium hover:bg-red-800 touch-manipulation shrink-0">
+              Reintentar
+            </button>
+            <button onClick={fb.clearError} className="text-white/70 hover:text-white touch-manipulation shrink-0">
+              ✕
+            </button>
           </div>
         )}
         <InventoryScreen
